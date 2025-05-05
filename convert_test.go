@@ -159,125 +159,6 @@ func TestMapToStructValues(t *testing.T) {
 	})
 }
 
-func TestStructValuesToMap(t *testing.T) {
-	t.Parallel()
-
-	t.Run("nil map", func(t *testing.T) {
-		t.Parallel()
-		result := StructValuesToMap(nil)
-		assert.Nil(t, result)
-	})
-
-	t.Run("empty map", func(t *testing.T) {
-		t.Parallel()
-		result := StructValuesToMap(map[string]*structpb.Value{})
-		assert.NotNil(t, result)
-		assert.Empty(t, result)
-	})
-
-	t.Run("map with primitive values", func(t *testing.T) {
-		t.Parallel()
-		input := map[string]*structpb.Value{}
-
-		strVal, _ := structpb.NewValue("value")
-		numVal, _ := structpb.NewValue(42.5)
-		boolVal, _ := structpb.NewValue(true)
-		nullVal, _ := structpb.NewValue(nil)
-
-		input["string"] = strVal
-		input["number"] = numVal
-		input["bool"] = boolVal
-		input["null"] = nullVal
-
-		result := StructValuesToMap(input)
-
-		assert.Len(t, result, 4)
-		assert.Equal(t, "value", result["string"])
-		assert.Equal(t, 42.5, result["number"])
-		assert.Equal(t, true, result["bool"])
-		assert.Nil(t, result["null"])
-	})
-
-	t.Run("map with complex values", func(t *testing.T) {
-		t.Parallel()
-		input := map[string]*structpb.Value{}
-
-		listVal, _ := structpb.NewValue([]any{1, "two", true})
-		mapVal, _ := structpb.NewValue(map[string]any{"nested": "value"})
-
-		input["list"] = listVal
-		input["map"] = mapVal
-
-		result := StructValuesToMap(input)
-
-		assert.Len(t, result, 2)
-
-		// Check list value
-		listResult, ok := result["list"].([]any)
-		assert.True(t, ok)
-		assert.Len(t, listResult, 3)
-		assert.Equal(t, float64(1), listResult[0])
-		assert.Equal(t, "two", listResult[1])
-		assert.Equal(t, true, listResult[2])
-
-		// Check map value
-		mapResult, ok := result["map"].(map[string]any)
-		assert.True(t, ok)
-		assert.Len(t, mapResult, 1)
-		assert.Equal(t, "value", mapResult["nested"])
-	})
-}
-
-func TestTryNewStructValue(t *testing.T) {
-	t.Parallel()
-
-	t.Run("nil value", func(t *testing.T) {
-		t.Parallel()
-		result := TryNewStructValue(nil)
-		assert.NotNil(t, result)
-		// Should create a null value
-		_, ok := result.Kind.(*structpb.Value_NullValue)
-		assert.True(t, ok)
-	})
-
-	t.Run("primitive values", func(t *testing.T) {
-		t.Parallel()
-
-		stringResult := TryNewStructValue("test")
-		assert.Equal(t, "test", stringResult.GetStringValue())
-
-		numberResult := TryNewStructValue(42.5)
-		assert.Equal(t, 42.5, numberResult.GetNumberValue())
-
-		boolResult := TryNewStructValue(true)
-		assert.Equal(t, true, boolResult.GetBoolValue())
-	})
-
-	t.Run("complex values", func(t *testing.T) {
-		t.Parallel()
-
-		listResult := TryNewStructValue([]any{1, "two", true})
-		assert.NotNil(t, listResult.GetListValue())
-		assert.Len(t, listResult.GetListValue().GetValues(), 3)
-
-		mapResult := TryNewStructValue(map[string]any{"key": "value"})
-		assert.NotNil(t, mapResult.GetStructValue())
-		assert.Len(t, mapResult.GetStructValue().GetFields(), 1)
-		assert.Equal(t, "value", mapResult.GetStructValue().GetFields()["key"].GetStringValue())
-	})
-
-	t.Run("unconvertible value", func(t *testing.T) {
-		t.Parallel()
-
-		type unconvertible struct {
-			Field string
-		}
-
-		result := TryNewStructValue(unconvertible{Field: "test"})
-		assert.Nil(t, result)
-	})
-}
-
 func TestSliceToStructValues(t *testing.T) {
 	t.Parallel()
 
@@ -359,6 +240,118 @@ func TestSliceToStructValues(t *testing.T) {
 	})
 }
 
+func TestStringFromProto(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil value", func(t *testing.T) {
+		t.Parallel()
+		result := StringFromProto(nil)
+		assert.Equal(t, "", result, "should return empty string for nil input")
+	})
+
+	t.Run("empty string", func(t *testing.T) {
+		t.Parallel()
+		emptyStr := ""
+		result := StringFromProto(&emptyStr)
+		assert.Equal(t, "", result, "should return empty string for empty string input")
+	})
+
+	t.Run("non-empty string", func(t *testing.T) {
+		t.Parallel()
+		testStr := "test string"
+		result := StringFromProto(&testStr)
+		assert.Equal(t, testStr, result, "should return string value for non-empty string input")
+	})
+}
+
+func TestStringToProto(t *testing.T) {
+	t.Parallel()
+
+	t.Run("empty string", func(t *testing.T) {
+		t.Parallel()
+		result := StringToProto("")
+		assert.NotNil(t, result, "should not return nil for empty string")
+		assert.Equal(t, "", *result, "should properly store empty string")
+	})
+
+	t.Run("non-empty string", func(t *testing.T) {
+		t.Parallel()
+		testStr := "test string"
+		result := StringToProto(testStr)
+		assert.NotNil(t, result, "should not return nil")
+		assert.Equal(t, testStr, *result, "should properly store string value")
+	})
+}
+
+func TestStructValuesToMap(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil map", func(t *testing.T) {
+		t.Parallel()
+		result := StructValuesToMap(nil)
+		assert.Nil(t, result)
+	})
+
+	t.Run("empty map", func(t *testing.T) {
+		t.Parallel()
+		result := StructValuesToMap(map[string]*structpb.Value{})
+		assert.NotNil(t, result)
+		assert.Empty(t, result)
+	})
+
+	t.Run("map with primitive values", func(t *testing.T) {
+		t.Parallel()
+		input := map[string]*structpb.Value{}
+
+		strVal, _ := structpb.NewValue("value")
+		numVal, _ := structpb.NewValue(42.5)
+		boolVal, _ := structpb.NewValue(true)
+		nullVal, _ := structpb.NewValue(nil)
+
+		input["string"] = strVal
+		input["number"] = numVal
+		input["bool"] = boolVal
+		input["null"] = nullVal
+
+		result := StructValuesToMap(input)
+
+		assert.Len(t, result, 4)
+		assert.Equal(t, "value", result["string"])
+		assert.Equal(t, 42.5, result["number"])
+		assert.Equal(t, true, result["bool"])
+		assert.Nil(t, result["null"])
+	})
+
+	t.Run("map with complex values", func(t *testing.T) {
+		t.Parallel()
+		input := map[string]*structpb.Value{}
+
+		listVal, _ := structpb.NewValue([]any{1, "two", true})
+		mapVal, _ := structpb.NewValue(map[string]any{"nested": "value"})
+
+		input["list"] = listVal
+		input["map"] = mapVal
+
+		result := StructValuesToMap(input)
+
+		assert.Len(t, result, 2)
+
+		// Check list value
+		listResult, ok := result["list"].([]any)
+		assert.True(t, ok)
+		assert.Len(t, listResult, 3)
+		assert.Equal(t, float64(1), listResult[0])
+		assert.Equal(t, "two", listResult[1])
+		assert.Equal(t, true, listResult[2])
+
+		// Check map value
+		mapResult, ok := result["map"].(map[string]any)
+		assert.True(t, ok)
+		assert.Len(t, mapResult, 1)
+		assert.Equal(t, "value", mapResult["nested"])
+	})
+}
+
 func TestStructValuesToSlice(t *testing.T) {
 	t.Parallel()
 
@@ -430,45 +423,52 @@ func TestStructValuesToSlice(t *testing.T) {
 	})
 }
 
-func TestStringFromProto(t *testing.T) {
+func TestTryNewStructValue(t *testing.T) {
 	t.Parallel()
 
 	t.Run("nil value", func(t *testing.T) {
 		t.Parallel()
-		result := StringFromProto(nil)
-		assert.Equal(t, "", result, "should return empty string for nil input")
+		result := TryNewStructValue(nil)
+		assert.NotNil(t, result)
+		// Should create a null value
+		_, ok := result.Kind.(*structpb.Value_NullValue)
+		assert.True(t, ok)
 	})
 
-	t.Run("empty string", func(t *testing.T) {
+	t.Run("primitive values", func(t *testing.T) {
 		t.Parallel()
-		emptyStr := ""
-		result := StringFromProto(&emptyStr)
-		assert.Equal(t, "", result, "should return empty string for empty string input")
+
+		stringResult := TryNewStructValue("test")
+		assert.Equal(t, "test", stringResult.GetStringValue())
+
+		numberResult := TryNewStructValue(42.5)
+		assert.Equal(t, 42.5, numberResult.GetNumberValue())
+
+		boolResult := TryNewStructValue(true)
+		assert.Equal(t, true, boolResult.GetBoolValue())
 	})
 
-	t.Run("non-empty string", func(t *testing.T) {
+	t.Run("complex values", func(t *testing.T) {
 		t.Parallel()
-		testStr := "test string"
-		result := StringFromProto(&testStr)
-		assert.Equal(t, testStr, result, "should return string value for non-empty string input")
-	})
-}
 
-func TestStringToProto(t *testing.T) {
-	t.Parallel()
+		listResult := TryNewStructValue([]any{1, "two", true})
+		assert.NotNil(t, listResult.GetListValue())
+		assert.Len(t, listResult.GetListValue().GetValues(), 3)
 
-	t.Run("empty string", func(t *testing.T) {
-		t.Parallel()
-		result := StringToProto("")
-		assert.NotNil(t, result, "should not return nil for empty string")
-		assert.Equal(t, "", *result, "should properly store empty string")
+		mapResult := TryNewStructValue(map[string]any{"key": "value"})
+		assert.NotNil(t, mapResult.GetStructValue())
+		assert.Len(t, mapResult.GetStructValue().GetFields(), 1)
+		assert.Equal(t, "value", mapResult.GetStructValue().GetFields()["key"].GetStringValue())
 	})
 
-	t.Run("non-empty string", func(t *testing.T) {
+	t.Run("unconvertible value", func(t *testing.T) {
 		t.Parallel()
-		testStr := "test string"
-		result := StringToProto(testStr)
-		assert.NotNil(t, result, "should not return nil")
-		assert.Equal(t, testStr, *result, "should properly store string value")
+
+		type unconvertible struct {
+			Field string
+		}
+
+		result := TryNewStructValue(unconvertible{Field: "test"})
+		assert.Nil(t, result)
 	})
 }
