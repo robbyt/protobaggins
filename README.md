@@ -5,8 +5,8 @@ Buffers in Go.
 
 # Why does this exist?
 
-Because I wanted a central place for all the useful conversion and workflow functions. There might be
-better ways to do these things.
+I wanted a central place for Proto Buf value conversion and utilities. There might be better ways
+to do these things.
 
 # What is this name?
 
