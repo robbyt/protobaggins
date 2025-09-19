@@ -3,8 +3,8 @@ module github.com/robbyt/protobaggins
 go 1.25.1
 
 require (
-	github.com/stretchr/testify v1.10.0
-	google.golang.org/protobuf v1.36.6
+	github.com/stretchr/testify v1.11.1
+	google.golang.org/protobuf v1.36.9
 )
 
 require (
