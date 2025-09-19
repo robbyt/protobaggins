@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -19,7 +20,7 @@ func TestConvertProtoValueToInterface(t *testing.T) {
 	t.Run("null value", func(t *testing.T) {
 		t.Parallel()
 		nullValue, err := structpb.NewValue(nil)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		result := ConvertProtoValueToInterface(nullValue)
 		assert.Nil(t, result)
 	})
@@ -27,15 +28,15 @@ func TestConvertProtoValueToInterface(t *testing.T) {
 	t.Run("number value", func(t *testing.T) {
 		t.Parallel()
 		numberValue, err := structpb.NewValue(42.5)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		result := ConvertProtoValueToInterface(numberValue)
-		assert.Equal(t, 42.5, result)
+		assert.InEpsilon(t, 42.5, result, 0.001)
 	})
 
 	t.Run("string value", func(t *testing.T) {
 		t.Parallel()
 		stringValue, err := structpb.NewValue("test string")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		result := ConvertProtoValueToInterface(stringValue)
 		assert.Equal(t, "test string", result)
 	})
@@ -43,7 +44,7 @@ func TestConvertProtoValueToInterface(t *testing.T) {
 	t.Run("bool value", func(t *testing.T) {
 		t.Parallel()
 		boolValue, err := structpb.NewValue(true)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		result := ConvertProtoValueToInterface(boolValue)
 		assert.Equal(t, true, result)
 	})
@@ -51,7 +52,7 @@ func TestConvertProtoValueToInterface(t *testing.T) {
 	t.Run("list value", func(t *testing.T) {
 		t.Parallel()
 		listValue, err := structpb.NewValue([]interface{}{1, "two", true})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		result := ConvertProtoValueToInterface(listValue)
 		expected := []interface{}{float64(1), "two", true}
 		assert.Equal(t, expected, result)
@@ -64,7 +65,7 @@ func TestConvertProtoValueToInterface(t *testing.T) {
 			"key2": 42,
 			"key3": true,
 		})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		result := ConvertProtoValueToInterface(structValue)
 		expected := map[string]interface{}{
 			"key1": "value1",
@@ -105,10 +106,10 @@ func TestMapToStructValues(t *testing.T) {
 
 		assert.Len(t, result, 5)
 		assert.Equal(t, "value", result["string"].GetStringValue())
-		assert.Equal(t, 42.5, result["number"].GetNumberValue())
-		assert.Equal(t, true, result["bool"].GetBoolValue())
+		assert.InEpsilon(t, 42.5, result["number"].GetNumberValue(), 0.001)
+		assert.True(t, result["bool"].GetBoolValue())
 		assert.NotNil(t, result["null"])
-		assert.Equal(t, float64(10), result["integer"].GetNumberValue())
+		assert.InEpsilon(t, float64(10), result["integer"].GetNumberValue(), 0.001)
 	})
 
 	t.Run("map with complex values", func(t *testing.T) {
@@ -127,9 +128,9 @@ func TestMapToStructValues(t *testing.T) {
 		// Check list value
 		listVal := result["list"].GetListValue().GetValues()
 		assert.Len(t, listVal, 3)
-		assert.Equal(t, float64(1), listVal[0].GetNumberValue())
+		assert.InEpsilon(t, float64(1), listVal[0].GetNumberValue(), 0.001)
 		assert.Equal(t, "two", listVal[1].GetStringValue())
-		assert.Equal(t, true, listVal[2].GetBoolValue())
+		assert.True(t, listVal[2].GetBoolValue())
 
 		// Check map value
 		mapVal := result["map"].GetStructValue().GetFields()
@@ -188,8 +189,8 @@ func TestSliceToStructValues(t *testing.T) {
 
 		assert.Len(t, result, 4)
 		assert.Equal(t, "string", result[0].GetStringValue())
-		assert.Equal(t, 42.5, result[1].GetNumberValue())
-		assert.Equal(t, true, result[2].GetBoolValue())
+		assert.InEpsilon(t, 42.5, result[1].GetNumberValue(), 0.001)
+		assert.True(t, result[2].GetBoolValue())
 		_, ok := result[3].Kind.(*structpb.Value_NullValue)
 		assert.True(t, ok)
 	})
@@ -208,9 +209,9 @@ func TestSliceToStructValues(t *testing.T) {
 		// Check nested list
 		listVal := result[0].GetListValue().GetValues()
 		assert.Len(t, listVal, 3)
-		assert.Equal(t, float64(1), listVal[0].GetNumberValue())
-		assert.Equal(t, float64(2), listVal[1].GetNumberValue())
-		assert.Equal(t, float64(3), listVal[2].GetNumberValue())
+		assert.InEpsilon(t, float64(1), listVal[0].GetNumberValue(), 0.001)
+		assert.InEpsilon(t, float64(2), listVal[1].GetNumberValue(), 0.001)
+		assert.InEpsilon(t, float64(3), listVal[2].GetNumberValue(), 0.001)
 
 		// Check map
 		mapVal := result[1].GetStructValue().GetFields()
@@ -236,7 +237,7 @@ func TestSliceToStructValues(t *testing.T) {
 		// Only valid values should be present
 		assert.Len(t, result, 2)
 		assert.Equal(t, "valid", result[0].GetStringValue())
-		assert.Equal(t, float64(42), result[1].GetNumberValue())
+		assert.InEpsilon(t, float64(42), result[1].GetNumberValue(), 0.001)
 	})
 }
 
@@ -246,14 +247,14 @@ func TestStringFromProto(t *testing.T) {
 	t.Run("nil value", func(t *testing.T) {
 		t.Parallel()
 		result := StringFromProto(nil)
-		assert.Equal(t, "", result, "should return empty string for nil input")
+		assert.Empty(t, result, "should return empty string for nil input")
 	})
 
 	t.Run("empty string", func(t *testing.T) {
 		t.Parallel()
 		emptyStr := ""
 		result := StringFromProto(&emptyStr)
-		assert.Equal(t, "", result, "should return empty string for empty string input")
+		assert.Empty(t, result, "should return empty string for empty string input")
 	})
 
 	t.Run("non-empty string", func(t *testing.T) {
@@ -271,7 +272,7 @@ func TestStringToProto(t *testing.T) {
 		t.Parallel()
 		result := StringToProto("")
 		assert.NotNil(t, result, "should not return nil for empty string")
-		assert.Equal(t, "", *result, "should properly store empty string")
+		assert.Empty(t, *result, "should properly store empty string")
 	})
 
 	t.Run("non-empty string", func(t *testing.T) {
@@ -303,10 +304,14 @@ func TestStructValuesToMap(t *testing.T) {
 		t.Parallel()
 		input := map[string]*structpb.Value{}
 
-		strVal, _ := structpb.NewValue("value")
-		numVal, _ := structpb.NewValue(42.5)
-		boolVal, _ := structpb.NewValue(true)
-		nullVal, _ := structpb.NewValue(nil)
+		strVal, err := structpb.NewValue("value")
+		require.NoError(t, err)
+		numVal, err := structpb.NewValue(42.5)
+		require.NoError(t, err)
+		boolVal, err := structpb.NewValue(true)
+		require.NoError(t, err)
+		nullVal, err := structpb.NewValue(nil)
+		require.NoError(t, err)
 
 		input["string"] = strVal
 		input["number"] = numVal
@@ -317,7 +322,7 @@ func TestStructValuesToMap(t *testing.T) {
 
 		assert.Len(t, result, 4)
 		assert.Equal(t, "value", result["string"])
-		assert.Equal(t, 42.5, result["number"])
+		assert.InEpsilon(t, 42.5, result["number"], 0.001)
 		assert.Equal(t, true, result["bool"])
 		assert.Nil(t, result["null"])
 	})
@@ -326,8 +331,10 @@ func TestStructValuesToMap(t *testing.T) {
 		t.Parallel()
 		input := map[string]*structpb.Value{}
 
-		listVal, _ := structpb.NewValue([]any{1, "two", true})
-		mapVal, _ := structpb.NewValue(map[string]any{"nested": "value"})
+		listVal, err := structpb.NewValue([]any{1, "two", true})
+		require.NoError(t, err)
+		mapVal, err := structpb.NewValue(map[string]any{"nested": "value"})
+		require.NoError(t, err)
 
 		input["list"] = listVal
 		input["map"] = mapVal
@@ -340,7 +347,7 @@ func TestStructValuesToMap(t *testing.T) {
 		listResult, ok := result["list"].([]any)
 		assert.True(t, ok)
 		assert.Len(t, listResult, 3)
-		assert.Equal(t, float64(1), listResult[0])
+		assert.InEpsilon(t, float64(1), listResult[0], 0.001)
 		assert.Equal(t, "two", listResult[1])
 		assert.Equal(t, true, listResult[2])
 
@@ -373,13 +380,13 @@ func TestStructValuesToSlice(t *testing.T) {
 		var input []*structpb.Value
 
 		strVal, err := structpb.NewValue("value")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		numVal, err := structpb.NewValue(42.5)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		boolVal, err := structpb.NewValue(true)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		nullVal, err := structpb.NewValue(nil)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		input = append(input, strVal, numVal, boolVal, nullVal)
 
@@ -387,7 +394,7 @@ func TestStructValuesToSlice(t *testing.T) {
 
 		assert.Len(t, result, 4)
 		assert.Equal(t, "value", result[0])
-		assert.Equal(t, 42.5, result[1])
+		assert.InEpsilon(t, 42.5, result[1], 0.001)
 		assert.Equal(t, true, result[2])
 		assert.Nil(t, result[3])
 	})
@@ -397,9 +404,9 @@ func TestStructValuesToSlice(t *testing.T) {
 		var input []*structpb.Value
 
 		listVal, err := structpb.NewValue([]any{1, "two", true})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		mapVal, err := structpb.NewValue(map[string]any{"nested": "value"})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		input = append(input, listVal, mapVal)
 
@@ -411,7 +418,7 @@ func TestStructValuesToSlice(t *testing.T) {
 		listResult, ok := result[0].([]any)
 		assert.True(t, ok)
 		assert.Len(t, listResult, 3)
-		assert.Equal(t, float64(1), listResult[0])
+		assert.InEpsilon(t, float64(1), listResult[0], 0.001)
 		assert.Equal(t, "two", listResult[1])
 		assert.Equal(t, true, listResult[2])
 
@@ -442,10 +449,10 @@ func TestTryNewStructValue(t *testing.T) {
 		assert.Equal(t, "test", stringResult.GetStringValue())
 
 		numberResult := TryNewStructValue(42.5)
-		assert.Equal(t, 42.5, numberResult.GetNumberValue())
+		assert.InEpsilon(t, 42.5, numberResult.GetNumberValue(), 0.001)
 
 		boolResult := TryNewStructValue(true)
-		assert.Equal(t, true, boolResult.GetBoolValue())
+		assert.True(t, boolResult.GetBoolValue())
 	})
 
 	t.Run("complex values", func(t *testing.T) {
