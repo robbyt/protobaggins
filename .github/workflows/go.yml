@@ -8,13 +8,17 @@ on:
 
 permissions:
   contents: read
+  # Optional: allow read access to pull request. Use with `only-new-issues` option.
+  pull-requests: read
+  # Optional: allow write access to checks to allow the action to annotate code in the PR.
+  checks: write
 
 env:
   GOCACHE: "/tmp/go-cache"
   GOMODCACHE: "/tmp/go-mod-cache"
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,6 +35,12 @@ jobs:
 
       - name: go mod tidy (fails if changes are needed)
         run: go mod tidy --diff
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: latest
+          cache-invalidation-interval: 30
 
       - name: Go test
         run: make test
